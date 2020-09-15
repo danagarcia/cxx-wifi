@@ -1,0 +1,3 @@
+[submodule "src/includes/pstreams"]
+	path = src/includes/pstreams
+	url = https://github.com/jwakely/pstreams
