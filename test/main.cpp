@@ -1,19 +1,14 @@
-/* 
-CXX-WiFi - Linux Network Manager (WPA) WiFi Connection Library for C++
-Copyright (C) 2020 - Dana Garcia
-Distributed under the GNU GENERAL PUBLIC LICENSE, Version 3.0
-See accompanying file LICENSE
-*/
-
+#include "mocknetwork.hpp"
+#include "gmock\gmock.h"
+#include "gtest\gtest.h"
 #include <iostream>
-#include "network.hpp"
-#include "pstreams\pstream.h"
 #include <string>
 #include <thread>
 #include <vector>
-
-using namespace cxxwifi;
+using namespace testing;
 using namespace std;
+using ::testing::Return;
+using ::testing::Throw;
 
 bool network::connect_network(const string ssid, const string passphrase)
 {
@@ -108,41 +103,6 @@ vector<string> network::get_available_networks()
     return iwlist_result;
 }
 
-vector<string> network::run_command(const string command)
-{
-    string output_line, error_line;
-    vector<string> result, error;
-    // Run command
-    redi::ipstream process(command, redi::pstreams::pstdout | redi::pstreams::pstderr);
-    // Gather output
-    while ( getline( process.out(), output_line ) )
-    {
-        result.push_back( output_line );
-    }
-    // Clear process at end of output or failure
-    if ( process.eof() && process.fail() )
-    {
-        process.clear();
-    }
-    // Gather error output
-    while ( getline( process.err(), error_line ) )
-    {
-        error.push_back( error_line );
-    }
-    // If errors exist, write errors as C errors, then throw
-    if ( !error.empty() )
-    {
-        cerr << "An error occurred while attempting to run: " << command << endl;
-        for (size_t i = 0; i < error.size(); i++)
-        {
-            cerr << error[i] << endl;
-        }
-        throw runtime_error("An error occurred while running the provided command" << command);
-    }
-    // Return result
-    return result;
-}
-
 bool network::test_connection()
 {
     // Ping cloudflare public DNS with 4 packets
@@ -202,5 +162,60 @@ bool network::wifi_adapter_up()
     else
     {
         throw runtime_error("Unable to determine adapter status of wlan0. To debug run `ifconfig` and ensure wlan0 is present.");
-    }  
+    }   
+}
+
+TEST(NetworkTests, write_succeeds_with_no_wlan_adapter)
+{
+    mocknetwork network;
+    vector<string> blank_result;
+    EXPECT_CALL(network, run_command())
+        .Times(2)
+        .WillOnce(Return(blank_result))
+        .WillOnce(Throw(runtime_error("unable to run"));
+    EXPECT_THROW(network.connect_network("wifi","passphrase"), runtime_error);   
+}
+
+TEST(NetworkTests, write_and_wlan_adapter_reset_succeed_with_no_connectivity)
+{
+    mocknetwork network;
+    vector<string> blank_result;
+    vector<string> up_adapter_result{
+        "wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500",
+        "inet 192.168.254.1  netmask 255.255.255.0  broadcast 192.168.254.255",
+        "inet6 0000::0000:0000:0000:0000  prefixlen 64  scopeid 0x20<link>",
+        "ether 00:00:00:00:00:00  txqueuelen 1000  (Ethernet)",
+        "RX packets 0  bytes 0 (0 MiB)",
+        "RX errors 0  dropped 0  overruns 0  frame 0",
+        "TX packets 0  bytes 0 (0 MiB)",
+        "TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0"
+    };
+    vector<string> down_adapter_result{
+        "wlan0: flags=4098<BROADCAST,MULTICAST>  mtu 1500",
+        "ether 00:00:00:00:00:00  txqueuelen 1000  (Ethernet)",
+        "RX packets 0  bytes 0 (0 MiB)",
+        "RX errors 0  dropped 0  overruns 0  frame 0",
+        "TX packets 0  bytes 0 (0 MiB)",
+        "TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0"
+    };
+    vector<string> failed_ping_result{
+        "PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.",
+        "",
+        "--- 1.1.1.1 ping statistics ---",
+        "4 packets transmitted, 0 received, 100% packet loss, time 93ms"
+    };
+    EXPECT_CALL(network, run_command())
+        .WillOnce(Return(blank_result))
+        .WillOnce(Return(blank_result))
+        .WillOnce(Return(down_adapter_result))
+        .WillOnce(Return(blank_result))
+        .WillOnce(Return(up_adapter_result))
+        .WillRepeatedly(Return(failed_ping_result));
+    EXPECT_FALSE(network.connect_network("wifi","passphrase"));
+}
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+    ::InitGoogleMock( &amp;argc, arv );
+    return RUN_ALL_TESTS();
 }
