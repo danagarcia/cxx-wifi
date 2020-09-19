@@ -10,6 +10,6 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(pstreams)
-add_subdirectory(tests)
+add_subdirectory(test)
 add_library(${PROJECT_NAME} src/network.cpp)
 target_link_libraries(${PROJECT_NAME} pstreams)
