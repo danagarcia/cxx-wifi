@@ -165,7 +165,7 @@ bool network::wifi_adapter_up()
     }   
 }
 
-TEST(NetworkTests, write_succeeds_with_no_wlan_adapter)
+TEST(ConnectNetworkTests, write_succeeds_with_no_wlan_adapter)
 {
     mocknetwork network;
     vector<string> blank_result;
@@ -176,7 +176,7 @@ TEST(NetworkTests, write_succeeds_with_no_wlan_adapter)
     EXPECT_THROW(network.connect_network("wifi","passphrase"), runtime_error);   
 }
 
-TEST(NetworkTests, write_and_wlan_adapter_reset_succeed_with_no_connectivity)
+TEST(ConnectNetworkTests, write_and_wlan_adapter_reset_succeed_with_no_connectivity)
 {
     mocknetwork network;
     vector<string> blank_result;

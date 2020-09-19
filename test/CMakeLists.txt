@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.11-3.18)
+project(test, CXX)
 
 include(FetchContent)
 
@@ -13,3 +14,5 @@ if(NOT googletest_POPULATED)
   FetchContent_Populate(googletest)
   add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
 endif()
+
+add_executable(${PROJECT_NAME} main.cpp)
